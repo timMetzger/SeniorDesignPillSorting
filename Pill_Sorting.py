@@ -4,12 +4,15 @@ from PyQt5.QtWidgets import (QApplication, QLabel, QProgressBar, QPushButton, QT
 
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtCore import Qt, QSortFilterProxyModel
-
+import serial
+import serial.tools.list_ports
 
 class Pill_Sorting_Interface():
     def __init__(self, scripts):
         self.app = QApplication([])
         self.scripts = scripts
+
+        self.ser = serial.Serial(serial.tools.list_ports.comports()[0].device, 9600, timeout=1)
 
         self.create_table()
         self.create_top_right_window()
@@ -116,12 +119,18 @@ class Pill_Sorting_Interface():
     # TODO progress bar control and alert windows to user
     def start_sort(self):
         print('start')
+        self.ser.write(b'S')
+        print(self.ser.readline())
 
     def pause_sort(self):
         print('pause')
+        self.ser.write(b'P')
+        print(self.ser.readline())
 
     def abort_sort(self):
         print('abort')
+        self.ser.write(b'A')
+        print(self.ser.readline())
 
     # Updates the prescriptions information field
     def update_information(self, selected, deselected):
@@ -152,6 +161,7 @@ def main():
                       "prescription": {"Benadryl": 2, "Motrin": 6}
                       }]
     ui = Pill_Sorting_Interface(user_info)
+
 
 
 if __name__ == "__main__":
