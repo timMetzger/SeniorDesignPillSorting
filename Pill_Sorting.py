@@ -263,9 +263,10 @@ class Direct_Control_Interface(QWidget):
         self.create_serial_output()
         self.create_positioning_group()
 
-        layout.addWidget(self.left_group, 0, 0, 2, 2)
-        layout.addWidget(self.serial_input_box, 2, 0, 2, 2)
-        layout.addWidget(self.serial_output_box, 0, 2, 4, 1)
+        layout.addWidget(self.positioning_group,0,0,4,1)
+        layout.addWidget(self.left_group, 0, 4, 2, 2)
+        layout.addWidget(self.serial_input_box, 2, 4, 2, 2)
+        layout.addWidget(self.serial_output_box, 0, 6, 4, 1)
 
         self.setWindowTitle("Direct Control")
         self.setWindowIcon(QIcon("Gear-icon"))
@@ -402,7 +403,7 @@ class Direct_Control_Interface(QWidget):
         clear_button = QPushButton("Clear")
         clear_button.clicked.connect(self.serial_input_field.clear)
         help_button = QPushButton("Help")
-        help_button.clicked.connect(self.display_info)
+        help_button.clicked.connect(self.help_button_info)
 
         layout = QGridLayout()
         layout.addWidget(self.serial_input_field, 0, 0, 3, 8)
@@ -428,10 +429,42 @@ class Direct_Control_Interface(QWidget):
         self.thread.start()
 
     def create_positioning_group(self):
-        self.positioning_group = QGroupBox("Configure Positions ")
+        self.positioning_group = QGroupBox("Configure Positions")
+        layout = QGridLayout()
+
+        set_home_button = QPushButton("Set Home")
+        set_home_button.clicked.connect(partial(self.set_pos, 0))
+        move_button = QPushButton("Move Home")
+        move_button.clicked.connect(partial(self.move_pos, 0))
+        layout.addWidget(set_home_button, 0, 0, 1, 4)
+        layout.addWidget(move_button, 0, 4, 1, 4)
+
+        for i in range(0,12,2):
+            set_button = QPushButton(f"Set P{i//2}")
+            set_button.clicked.connect(partial(self.set_pos,i//2))
+            move_button = QPushButton(f"Move P{i//2}")
+            move_button.clicked.connect(partial(self.move_pos,i//2))
 
 
 
+            layout.addWidget(set_button,i,0,1,4)
+            layout.addWidget(move_button,i,4,1,4)
+            if i != 10:
+                horizontal_separator = QFrame()
+                horizontal_separator.setGeometry(60, 110, 751, 20)
+                horizontal_separator.setFrameShape(QFrame.HLine)
+                horizontal_separator.setFrameShadow(QFrame.Sunken)
+                layout.addWidget(horizontal_separator,i+1,0,1,8)
+
+        self.positioning_group.setLayout(layout)
+
+    def move_pos(self,pos):
+        #TODO move to preset pos
+        pass
+
+    def set_pos(self,pos):
+        #TODO set position number to coords given by grbl
+        pass
 
     def move_axis_aboslute(self, axis, dist):
         pass
@@ -441,7 +474,7 @@ class Direct_Control_Interface(QWidget):
         pass
             #TODO Write statement to serial here
 
-    def display_info(self):
+    def help_button_info(self):
         msg = QMessageBox()
         msg.setWindowTitle("Additional Information")
         msg.setText("Commands:")
