@@ -1,7 +1,7 @@
 # By: Timothy Metzger
 from PyQt5.QtWidgets import (QApplication, QLabel, QProgressBar, QPushButton, QTableView, QWidget,
                              QHBoxLayout, QGroupBox, QGridLayout, QTextEdit, QLineEdit, QVBoxLayout,
-                             QHeaderView, QMenuBar, QActionGroup, QAction, QMessageBox, QSpinBox, QPlainTextEdit)
+                             QHeaderView, QMenuBar, QActionGroup, QAction, QMessageBox, QSpinBox, QPlainTextEdit, QFrame)
 
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QIcon
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, QThread
@@ -205,7 +205,6 @@ class Pill_Sorting_Interface():
         if self.ser is not None:
             print('start')
             self.ser.write(b'S')
-            print(self.ser.readline())
         else:
             self.serial_not_set()
 
@@ -214,7 +213,7 @@ class Pill_Sorting_Interface():
         if self.ser is not None:
             print('pause')
             self.ser.write(b'P')
-            print(self.ser.readline())
+            #print(self.ser.readline())
         else:
             self.serial_not_set()
 
@@ -223,7 +222,6 @@ class Pill_Sorting_Interface():
         if self.ser is not None:
             print('abort')
             self.ser.write(b'A')
-            print(self.ser.readline())
         else:
             self.serial_not_set()
 
@@ -250,8 +248,6 @@ class Pill_Sorting_Interface():
         except IndexError:
             print("IndexError")
 
-
-# noinspection PyTypeChecker
 class Direct_Control_Interface(QWidget):
     def __init__(self,ser=None):
         super().__init__()
@@ -265,6 +261,7 @@ class Direct_Control_Interface(QWidget):
         self.create_left_button_group()
         self.create_serial_input()
         self.create_serial_output()
+        self.create_positioning_group()
 
         layout.addWidget(self.left_group, 0, 0, 2, 2)
         layout.addWidget(self.serial_input_box, 2, 0, 2, 2)
@@ -279,58 +276,120 @@ class Direct_Control_Interface(QWidget):
         layout = QGridLayout()
 
         # X Control Buttons
-        plus_x = QPushButton("X: +10")
-        plus_x.clicked.connect(partial(self.move_axis_aboslute, 'x', 10))
+        plus_x10 = QPushButton("X +10")
+        plus_x10.clicked.connect(partial(self.move_axis_aboslute, 'x', 10))
+        minus_x10 = QPushButton("X -10")
+        minus_x10.clicked.connect(partial(self.move_axis_aboslute, 'x', -10))
 
-        minus_x = QPushButton("X: -10")
-        minus_x.clicked.connect(partial(self.move_axis_aboslute, 'x', -10))
+        plus_x1 = QPushButton("X +1")
+        plus_x1.clicked.connect(partial(self.move_axis_aboslute, 'x', 1))
+        minus_x1 = QPushButton("X -1")
+        minus_x1.clicked.connect(partial(self.move_axis_aboslute, 'x', -1))
+
+        plus_x001 = QPushButton("X +0.001")
+        plus_x001.clicked.connect(partial(self.move_axis_aboslute, 'x', 0.001))
+        minus_x001 = QPushButton("X -0.001")
+        minus_x001.clicked.connect(partial(self.move_axis_aboslute, 'x', -0.001))
 
         # Y Control Buttons
-        plus_y = QPushButton("Y: +10")
-        plus_y.clicked.connect(partial(self.move_axis_aboslute, 'y', 10))
-        minus_y = QPushButton("Y: -10")
-        minus_y.clicked.connect(partial(self.move_axis_aboslute, 'y', -10))
+        plus_y10 = QPushButton("Y +10")
+        plus_y10.clicked.connect(partial(self.move_axis_aboslute, 'y', 10))
+        minus_y10 = QPushButton("Y -10")
+        minus_y10.clicked.connect(partial(self.move_axis_aboslute, 'y', -10))
+
+        plus_y1 = QPushButton("Y +1")
+        plus_y1.clicked.connect(partial(self.move_axis_aboslute, 'y', 1))
+        minus_y1 = QPushButton("Y -1")
+        minus_y1.clicked.connect(partial(self.move_axis_aboslute, 'y', -1))
+
+        plus_y001 = QPushButton("Y +0.001")
+        plus_y001.clicked.connect(partial(self.move_axis_aboslute, 'y', 0.001))
+        minus_y001 = QPushButton("Y -0.001")
+        minus_y001.clicked.connect(partial(self.move_axis_aboslute, 'y', -0.001))
 
         # Z Control Buttons
-        plus_z = QPushButton("Z: +10")
-        plus_z.clicked.connect(partial(self.move_axis_aboslute, 'z', 10))
-        minus_z = QPushButton("Z: -10")
-        minus_z.clicked.connect(partial(self.move_axis_aboslute, 'z', -10))
+        plus_z10 = QPushButton("Z +10")
+        plus_z10.clicked.connect(partial(self.move_axis_aboslute, 'z', 10))
+        minus_z10 = QPushButton("Z -10")
+        minus_z10.clicked.connect(partial(self.move_axis_aboslute, 'z', -10))
+
+        plus_z1 = QPushButton("Z +1")
+        plus_z1.clicked.connect(partial(self.move_axis_aboslute, 'z', 1))
+        minus_z1 = QPushButton("Z -1")
+        minus_z1.clicked.connect(partial(self.move_axis_aboslute, 'z', -1))
+
+        plus_z001 = QPushButton("Z +0.001")
+        plus_z001.clicked.connect(partial(self.move_axis_aboslute, 'z', 0.001))
+        minus_z001 = QPushButton("Z -0.001")
+        minus_z001.clicked.connect(partial(self.move_axis_aboslute, 'z', -0.001))
 
         # User input control
-        x_label = QLabel("X:")
+        x_spinner_label = QLabel("X")
         x_spinner = QSpinBox(minimum=0, maximum=100)
 
-        y_label = QLabel("Y:")
+        y_spinner_label = QLabel("Y")
         y_spinner = QSpinBox(minimum=0, maximum=100)
 
-        z_label = QLabel("Z:")
+        z_spinner_label = QLabel("Z")
         z_spinner = QSpinBox(minimum=0, maximum=100)
 
         send_button = QPushButton("Send")
         send_button.clicked.connect(partial(self.move_to, [x_spinner.value(), y_spinner.value(), z_spinner.value()]))
 
+        horizontal_separator = QFrame()
+        horizontal_separator.setGeometry(60,110,751,20)
+        horizontal_separator.setFrameShape(QFrame.HLine)
+        horizontal_separator.setFrameShadow(QFrame.Sunken)
+
+        vertical_separator1 = QFrame()
+        vertical_separator1.setGeometry(60,110,751,20)
+        vertical_separator1.setFrameShape(QFrame.VLine)
+        vertical_separator1.setFrameShadow(QFrame.Sunken)
+
+        vertical_separator2 = QFrame()
+        vertical_separator2.setGeometry(60,110,751,20)
+        vertical_separator2.setFrameShape(QFrame.VLine)
+        vertical_separator2.setFrameShadow(QFrame.Sunken)
+
         # Group Buttons
         # Independent axis control buttons
-        layout.addWidget(plus_x, 0, 0, 1, 4)
-        layout.addWidget(minus_x, 0, 4, 1, 4)
-        layout.addWidget(plus_y, 1, 0, 1, 4)
-        layout.addWidget(minus_y, 1, 4, 1, 4)
-        layout.addWidget(plus_z, 2, 0, 1, 4)
-        layout.addWidget(minus_z, 2, 4, 1, 4)
+        layout.addWidget(plus_x10, 0, 0, 1, 4)
+        layout.addWidget(minus_x10, 0, 4, 1, 4)
+        layout.addWidget(plus_x1,1,0,1,4)
+        layout.addWidget(minus_x1,1,4,1,4)
+        layout.addWidget(plus_x001,2,0,1,4)
+        layout.addWidget(minus_x001,2,4,1,4)
 
-        # Spinbox control
-        spin_box_layout = QHBoxLayout()
-        spin_box_layout.addWidget(x_label)
-        spin_box_layout.addWidget(x_spinner)
-        spin_box_layout.addWidget(y_label)
-        spin_box_layout.addWidget(y_spinner)
-        spin_box_layout.addWidget(z_label)
-        spin_box_layout.addWidget(z_spinner)
-        spin_box_layout.addWidget(send_button)
+        layout.addWidget(vertical_separator1,0,9,3,1)
 
-        layout.addLayout(spin_box_layout, 3, 0, 1, 8)
+        layout.addWidget(plus_y10,0,10,1,4)
+        layout.addWidget(minus_y10,0,14,1,4)
+        layout.addWidget(plus_y1,1,10,1,4)
+        layout.addWidget(minus_y1,1,14,1,4)
+        layout.addWidget(plus_y001,2,10,1,4)
+        layout.addWidget(minus_y001,2,14,1,4)
+
+        layout.addWidget(vertical_separator2,0,19,3,1)
+
+        layout.addWidget(plus_z10,0,20,1,4)
+        layout.addWidget(minus_z10,0,24,1,4)
+        layout.addWidget(plus_z1,1,20,1,4)
+        layout.addWidget(minus_z1,1,24,1,4)
+        layout.addWidget(plus_z001,2,20,1,4)
+        layout.addWidget(minus_z001,2,24,1,4)
+
+        layout.addWidget(horizontal_separator,4,0,1,28)
+
+        layout.addWidget(x_spinner_label,5,0)
+        layout.addWidget(x_spinner,5,1,1,6)
+        layout.addWidget(y_spinner_label,5,7)
+        layout.addWidget(y_spinner,5,8,1,6)
+        layout.addWidget(z_spinner_label,5,14)
+        layout.addWidget(z_spinner,5,15,1,6)
+        layout.addWidget(send_button,5,21,1,7)
+
         self.left_group.setLayout(layout)
+
 
     def create_serial_input(self):
         self.serial_input_box = QGroupBox("Serial Input")
@@ -356,6 +415,7 @@ class Direct_Control_Interface(QWidget):
     def create_serial_output(self):
         self.serial_output_box = QGroupBox("Serial Output")
         self.serial_output_field = QPlainTextEdit()
+        self.serial_output_field.setReadOnly(True)
 
         layout = QVBoxLayout()
         layout.addWidget(self.serial_output_field)
@@ -367,18 +427,18 @@ class Direct_Control_Interface(QWidget):
         self.thread.started.connect(self.worker.update_display)
         self.thread.start()
 
+    def create_positioning_group(self):
+        self.positioning_group = QGroupBox("Configure Positions ")
 
 
 
 
     def move_axis_aboslute(self, axis, dist):
-        if self.ser is not None:
-            pass
+        pass
             #TODO Write statement to serial here
 
     def move_to(self, pos):
-        if self.ser is not None:
-            pass
+        pass
             #TODO Write statement to serial here
 
     def display_info(self):
@@ -390,9 +450,8 @@ class Direct_Control_Interface(QWidget):
         msg.exec_()
 
     def write_serial(self):
-        if self.ser is not None:
-            commands = self.serial_input_field.toPlainText()
-            self.ser.write(commands)
+        commands = self.serial_input_field.toPlainText()
+        self.ser.write(commands)
 
 
 class Configurator_Interface(QWidget):
@@ -409,17 +468,13 @@ class Serial_Reader(QObject):
         self.ser = serial_port
         self.display = display_field
 
-
-
-
     def update_display(self):
         if self.ser is not None:
             t = 0
             while True:
-                if t % 150 == 0:
-                    text = self.ser.readline().decode('ascii').strip()
+                    text = self.ser.readline().decode('ascii')
                     if text:
-                        print(text)
+                        self.display.appendPlainText(text)
 
 
 
