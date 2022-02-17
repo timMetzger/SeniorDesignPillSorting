@@ -450,8 +450,9 @@ class Direct_Control_Interface(QWidget):
         msg.exec_()
 
     def write_serial(self):
-        commands = self.serial_input_field.toPlainText()
+        commands = self.serial_input_field.toPlainText().encode()
         self.ser.write(commands)
+        self.serial_input_field.clear()
 
 
 class Configurator_Interface(QWidget):
