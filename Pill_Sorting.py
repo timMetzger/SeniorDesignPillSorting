@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QApplication, QLabel, QProgressBar, QPushButton, QT
                              QHeaderView, QMenuBar, QActionGroup, QAction, QMessageBox, QSpinBox, QPlainTextEdit, QFrame)
 
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QIcon
-from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, QThread
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, QThread, pyqtSignal
 import serial
 import serial.tools.list_ports
 from functools import partial
@@ -423,9 +423,11 @@ class Direct_Control_Interface(QWidget):
         self.serial_output_box.setLayout(layout)
 
         self.thread = QThread()
-        self.worker = Serial_Reader(self.ser,self.serial_output_field)
+        self.worker = Serial_Reader(self.ser)
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.update_display)
+        self.worker.progress.connect(self.serial_output_field.appendPlainText)
+        self.worker.update.connect(self.update)
         self.thread.start()
 
     def create_positioning_group(self):
@@ -497,18 +499,22 @@ class Configurator_Interface(QWidget):
         self.setLayout(layout)
 
 class Serial_Reader(QObject):
-    def __init__(self,serial_port,display_field):
+    progress = pyqtSignal(str)
+    update = pyqtSignal()
+    def __init__(self,serial_port):
         super().__init__()
         self.ser = serial_port
-        self.display = display_field
+
 
     def update_display(self):
         if self.ser is not None:
+
             t = 0
             while True:
                     text = self.ser.readline().decode('ascii')
                     if text:
-                        self.display.appendPlainText(text)
+                        self.progress.emit(text)
+                        self.update.emit()
 
 
 
