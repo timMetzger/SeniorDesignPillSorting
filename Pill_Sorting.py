@@ -523,6 +523,7 @@ class Configurator_Interface(QWidget):
         self.setting_boxs = []
         layout = QGridLayout()
         i = 0
+        j = 0
         for field, setting in zip(fields, settings):
             command, starting_value = setting
 
@@ -532,14 +533,19 @@ class Configurator_Interface(QWidget):
 
             self.setting_boxs.append([field, command, starting_value, value_box])
 
-            layout.addWidget(label, i, 0)
-            layout.addWidget(value_box, i, 1, 1, 2)
+            if j % 2 == 0:
+                layout.addWidget(label, i, 0)
+                layout.addWidget(value_box, i, 1, 1, 2)
+            else:
+                layout.addWidget(label, i, 3)
+                layout.addWidget(value_box, i, 4, 1, 2)
+                i += 1
 
-            i += 1
+            j += 1
 
         apply_button = QPushButton("Apply")
         apply_button.clicked.connect(self.update_settings)
-        layout.addWidget(apply_button, i, 0, 1, 3)
+        layout.addWidget(apply_button, i+1, 0, 1, 6)
         self.settings_group.setLayout(layout)
 
     def update_settings(self):
