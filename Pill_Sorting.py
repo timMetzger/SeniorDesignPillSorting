@@ -16,37 +16,41 @@ class Pill_Sorting_Interface():
     def __init__(self, scripts):
         self.app = QApplication([])
         self.scripts = scripts
-        self.ser = None
+        self.ser_grbl = None
+        self.ser_uno = None
         self.configurator = None
         self.controller = None
 
         self.menu_bar = QMenuBar()
+        self.set_com_ports()
+        if self.ser_grbl is not None and self.ser_uno is not None:
+            self.create_table()
+            self.create_top_right_window()
+            self.create_bottom_right_window()
+            self.create_progress_bar()
+            self.create_menu_bar()
 
-        self.create_table()
-        self.create_top_right_window()
-        self.create_bottom_right_window()
-        self.create_progress_bar()
-        self.create_menu_bar()
+            self.window = QWidget()
 
-        self.window = QWidget()
+            main_layout = QGridLayout()
+            main_layout.addWidget(self.menu_bar, 0, 0)
+            main_layout.addWidget(self.left_window, 1, 0, 4, 3)
+            main_layout.addWidget(self.top_right_window, 1, 3)
+            main_layout.addWidget(self.bottom_right_window, 2, 3)
+            main_layout.addWidget(self.progress_bar, 3, 3)
+            main_layout.setRowMinimumHeight(0, 25)
+            main_layout.setColumnMinimumWidth(1, 750)
+            main_layout.setColumnMinimumWidth(3, 250)
+            main_layout.setRowMinimumHeight(1, 500)
+            main_layout.setColumnStretch(3, 1)
+            main_layout.setColumnStretch(0, 2)
 
-        main_layout = QGridLayout()
-        main_layout.addWidget(self.menu_bar, 0, 0)
-        main_layout.addWidget(self.left_window, 1, 0, 4, 3)
-        main_layout.addWidget(self.top_right_window, 1, 3)
-        main_layout.addWidget(self.bottom_right_window, 2, 3)
-        main_layout.addWidget(self.progress_bar, 3, 3)
-        main_layout.setRowMinimumHeight(0, 25)
-        main_layout.setColumnMinimumWidth(1, 750)
-        main_layout.setColumnMinimumWidth(3, 250)
-        main_layout.setRowMinimumHeight(1, 500)
-        main_layout.setColumnStretch(3, 1)
-        main_layout.setColumnStretch(0, 2)
-
-        self.window.setWindowTitle("Pill Sorting Interface")
-        self.window.setLayout(main_layout)
-        self.window.setWindowIcon(QIcon('Pills-icon.png'))
-        self.window.show()
+            self.window.setWindowTitle("Pill Sorting Interface")
+            self.window.setLayout(main_layout)
+            self.window.setWindowIcon(QIcon('Pills-icon.png'))
+            self.window.show()
+        else:
+            self.serial_not_set()
 
         self.app.exec()
 
@@ -130,112 +134,56 @@ class Pill_Sorting_Interface():
     # Creates menu bar
     def create_menu_bar(self):
         self.menu_bar = QMenuBar()
-        self.ports = self.menu_bar.addMenu("Ports")
-        self.refresh_ports()
 
         tools = self.menu_bar.addMenu("Tools")
         tools.addAction("Configuration", self.start_configurator)
         tools.addAction("Direct Control", self.start_direct_control)
 
     def start_configurator(self):
-        if self.ser is not None:
-            if self.configurator is None:
-                self.configurator = Configurator_Interface(self.ser)
-            self.configurator.show()
-        else:
-            self.serial_not_set()
+        if self.configurator is None:
+            self.configurator = Configurator_Interface(self.ser_grbl)
+        self.configurator.show()
+
 
     def start_direct_control(self):
-        if self.ser is not None:
-            if self.controller is None:
-                self.controller = Direct_Control_Interface(self.ser)
-            self.controller.show()
-        else:
-            self.serial_not_set()
-
-    # Update the available com ports
-    def refresh_ports(self):
-        current_ports = serial.tools.list_ports.comports()
-        if len(current_ports) == 0:
-            self.ports.clear()
-            refresh = QAction("Refresh", self.ports)
-            refresh.triggered.connect(self.refresh_ports)
-            self.ports.addAction(refresh)
-        else:
-
-            available_ports = []
-
-            for current_port in self.ports.actions():
-                available_ports.append(current_port.text())
-
-            new_ports = []
-            for port in current_ports:
-                if port.device not in available_ports:
-                    new_ports.append(port.device)
-
-            com_group = QActionGroup(self.ports)
-
-            if len(new_ports) != 0:
-                self.ports.clear()
-                for new_port in new_ports:
-                    action = QAction(new_port, self.ports, checkable=True)
-                    action.triggered.connect(self.set_com_port)
-                    self.ports.addAction(action)
-                    com_group.addAction(action)
-
-                refresh = QAction("Refresh", self.ports)
-                refresh.triggered.connect(self.refresh_ports)
-                self.ports.addAction(refresh)
-
-                com_group.setExclusive(True)
+        if self.controller is None:
+            self.controller = Direct_Control_Interface(self.ser_grbl)
+        self.controller.show()
 
     # Set the serial communication attribute
-    def set_com_port(self):
-        # This is inside of a try except block due to the MenuBar object not cooperating with being unchecked
-        try:
-            for i, port in enumerate(self.ports.actions()[:-1]):
-                if port.isChecked():
-                    self.ser = serial.Serial(port.text(), 115200, timeout=1)
-
-        except serial.SerialException:
-            self.ser = None
-            for button in self.ports.actions()[:-1]:
-                button.setChecked(False)
-
-    # TODO progress bar control and alert windows to user
-    def start_sort(self):
-        if self.ser is not None:
-            print('start')
-            self.ser.write(b'S')
-        else:
-            self.serial_not_set()
-
-    def pause_sort(self):
-
-        if self.ser is not None:
-            print('pause')
-            self.ser.write(b'P')
-            # print(self.ser.readline())
-        else:
-            self.serial_not_set()
-
-    def abort_sort(self):
-
-        if self.ser is not None:
-            print('abort')
-            self.ser.write(b'A')
-        else:
-            self.serial_not_set()
+    def set_com_ports(self):
+        ports = serial.tools.list_ports.comports()
+        for i, port in enumerate(ports):
+            if port.description.startswith("Arduino"):
+                self.ser_uno = serial.Serial(port=port.device,baudrate=115200,timeout=1)
+            elif port.description.startswith("USB-SERIAL CH340"):
+                self.ser_grbl = serial.Serial(port=port.device,baudrate=115200,timeout=1)
 
     def serial_not_set(self):
         msg = QMessageBox()
         msg.setWindowTitle("Missing Serial Port")
-        msg.setText("Please set the COM port using the menu bar.")
-        msg.setInformativeText(
-            "If the COM port is not present and the machine is connected please try a different USB port.")
+        msg.setText("Please connect both USBs")
+        msg.setInformativeText("If both USBs are connected and you are still getting this error please try different ports")
         msg.setIcon(QMessageBox.Critical)
 
         msg.exec_()
+
+
+    # TODO progress bar control and alert windows to user
+    def start_sort(self):
+        print('start')
+        self.ser_grbl.write(b'S')
+
+
+    def pause_sort(self):
+        print('pause')
+        self.ser_grbl.write(b'P')
+
+
+
+    def abort_sort(self):
+        print('abort')
+        self.ser_grbl.write(b'A')
 
     # Updates the prescriptions information field
     def update_information(self, selected, deselected):
