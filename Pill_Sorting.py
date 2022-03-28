@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QApplication, QLabel, QProgressBar, QPushButton, QT
                              QDoubleSpinBox)
 
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QIcon
-from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, QTimer ,QThread, pyqtSignal
 import serial
 import serial.tools.list_ports
 from functools import partial
@@ -20,6 +20,7 @@ class Pill_Sorting_Interface():
         self.ser_uno = None
         self.configurator = None
         self.controller = None
+        self.sorting = False
 
         self.menu_bar = QMenuBar()
         self.set_com_ports()
@@ -103,25 +104,23 @@ class Pill_Sorting_Interface():
     def create_bottom_right_window(self):
         self.bottom_right_window = QGroupBox("Controls")
 
+        self.scan_rfid_button = QPushButton("Scan RFID")
+        self.scan_rfid_button.clicked.connect(self.scan_rfid)
+
         self.start_button = QPushButton("Start")
-        self.start_button.setCheckable(True)
-        self.start_button.setChecked(False)
         self.start_button.clicked.connect(self.start_sort)
 
         self.pause_button = QPushButton("Pause")
-        self.pause_button.setCheckable(True)
-        self.pause_button.setChecked(False)
         self.pause_button.clicked.connect(self.pause_sort)
 
         self.abort_button = QPushButton("Abort")
-        self.abort_button.setCheckable(True)
-        self.abort_button.setChecked(False)
         self.abort_button.clicked.connect(self.abort_sort)
 
-        layout = QHBoxLayout()
-        layout.addWidget(self.start_button)
-        layout.addWidget(self.pause_button)
-        layout.addWidget(self.abort_button)
+        layout = QGridLayout()
+        layout.addWidget(self.scan_rfid_button,0,0,1,3)
+        layout.addWidget(self.start_button,1,0)
+        layout.addWidget(self.pause_button,1,1)
+        layout.addWidget(self.abort_button,1,2)
 
         self.bottom_right_window.setLayout(layout)
 
@@ -143,7 +142,6 @@ class Pill_Sorting_Interface():
         if self.configurator is None:
             self.configurator = Configurator_Interface(self.ser_grbl)
         self.configurator.show()
-
 
     def start_direct_control(self):
         if self.controller is None:
@@ -168,22 +166,57 @@ class Pill_Sorting_Interface():
 
         msg.exec_()
 
-
     # TODO progress bar control and alert windows to user
+    def scan_rfid(self):
+        self.ser_uno.write(b'scan')
+        rfid_info = self.ser_uno.readline()
+
     def start_sort(self):
-        print('start')
-        self.ser_grbl.write(b'S')
+        self.ser_uno.write(b'start')
+        self.sorting = True
+
+        starting_msg = TimedMessageBox(timeout=5)
+        starting_msg.exec_()
+
+
+        self.thread = QThread()
+        self.worker = Sorting_Worker(self.ser_grbl,self.progress_bar)
+        self.worker.moveToThread(self.thread)
+        self.thead.started.connect(self.worker.sort_pills)
+
+        #TODO update the progress bar
+        # Need to use signals to control the thread running the sorting process
+        # thread with sorting process will display number of pill remaining
+        # emits a signal back to the main controller interface causing the
+        # the progress bar to update accordingly
+        self.worker.progress.connect(self.update)
+        self.thread.start()
+
 
 
     def pause_sort(self):
-        print('pause')
-        self.ser_grbl.write(b'P')
+        self.ser_uno.write(b'hold')
+
+        self.sorting = False
+
+        msg = QMessageBox()
+        msg.setWindowTitle("Sorting Paused")
+        msg.setText("Sorting has been paused")
+        msg.setIcon(QMessageBox.Information)
+        msg.exec_()
 
 
 
     def abort_sort(self):
-        print('abort')
-        self.ser_grbl.write(b'A')
+        self.ser_uno.write(b'abort')
+
+        self.sorting = False
+
+        msg = QMessageBox()
+        msg.setWindowTitle("Sorting Aborted")
+        msg.setText("Sorting has been aborted")
+        msg.setIcon(QMessageBox.Information)
+        msg.exec_()
 
     # Updates the prescriptions information field
     def update_information(self, selected, deselected):
@@ -277,17 +310,17 @@ class Direct_Control_Interface(QWidget):
 
         # User input control
         x_spinner_label = QLabel("X")
-        x_spinner = QSpinBox(minimum=0, maximum=100)
+        x_spinner = QSpinBox(minimum=0, maximum=1000)
 
         y_spinner_label = QLabel("Y")
-        y_spinner = QSpinBox(minimum=0, maximum=100)
+        y_spinner = QSpinBox(minimum=0, maximum=1000)
 
         z_spinner_label = QLabel("Z")
-        z_spinner = QSpinBox(minimum=0, maximum=100)
+        z_spinner = QSpinBox(minimum=0, maximum=1000)
 
         send_button = QPushButton("Send")
         send_button.clicked.connect(
-            partial(self.move_absolute, [x_spinner.value(), y_spinner.value(), z_spinner.value()]))
+            partial(self.move_absolute, x_spinner.value(), y_spinner.value(), z_spinner.value()))
 
         horizontal_separator = QFrame()
         horizontal_separator.setGeometry(60, 110, 751, 20)
@@ -342,6 +375,7 @@ class Direct_Control_Interface(QWidget):
         layout.addWidget(send_button, 5, 21, 1, 7)
 
         self.left_group.setLayout(layout)
+
 
     def create_serial_input(self):
         self.serial_input_box = QGroupBox("Serial Input")
@@ -424,8 +458,8 @@ class Direct_Control_Interface(QWidget):
     def move_axis_relative(self, axis, dist):
         self.ser.write(f'G91 {axis}{dist}\n'.encode())
 
-    def move_absolute(self, pos):
-        x, y, z = pos
+    #TODO This does not work, grbl gives ok response
+    def move_absolute(self, x,y,z):
         self.ser.write(f'G90 X{x} Y{y} Z{z}\n'.encode())
 
     def help_button_info(self):
@@ -440,7 +474,6 @@ class Direct_Control_Interface(QWidget):
         commands = self.serial_input_field.toPlainText().encode()
         self.ser.write(commands)
         self.serial_input_field.clear()
-
 
 class Configurator_Interface(QWidget):
     def __init__(self, ser):
@@ -543,6 +576,29 @@ class Configurator_Interface(QWidget):
 
         return values
 
+class TimedMessageBox(QMessageBox):
+    def __init__(self, timeout=3, parent=None):
+        super(TimedMessageBox,self).__init__(parent)
+        self.setWindowTitle("Starting Sort")
+        self.setIcon(QMessageBox.Information)
+        self.setStandardButtons(QMessageBox.NoButton)
+        self.time_to_wait = timeout
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.change_time)
+        self.change_time()
+        self.timer.start()
+
+    def change_time(self):
+        self.setText(f"Sorting will begin in {self.time_to_wait} seconds")
+        if self.time_to_wait <= 0:
+            self.close()
+        self.time_to_wait -= 1
+
+
+    def closeEvent(self,event):
+        self.timer.stop()
+        event.accept()
 
 class Serial_Reader(QObject):
     progress = pyqtSignal(str)
@@ -562,6 +618,17 @@ class Serial_Reader(QObject):
                     self.progress.emit(text)
                     self.update.emit()
 
+class Sorting_Worker(QObject):
+    progress = pyqtSignal(int)
+    update = pyqtSignal(int)
+
+    def __init__(self,serial_port,progress_bar):
+        super().__init__()
+        self.ser = serial_port
+        self.progress_bar = progress_bar
+
+    def sort_pills(self):
+        pass
 
 def main():
     user_info = [{"id": "1234",
