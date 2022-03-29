@@ -206,7 +206,6 @@ class Pill_Sorting_Interface():
         msg.exec_()
 
 
-
     def abort_sort(self):
         self.ser_uno.write(b'abort')
 
@@ -319,8 +318,7 @@ class Direct_Control_Interface(QWidget):
         z_spinner = QSpinBox(minimum=0, maximum=1000)
 
         send_button = QPushButton("Send")
-        send_button.clicked.connect(
-            partial(self.move_absolute, x_spinner.value(), y_spinner.value(), z_spinner.value()))
+        send_button.clicked.connect(partial(self.move_absolute, x_spinner, y_spinner, z_spinner))
 
         horizontal_separator = QFrame()
         horizontal_separator.setGeometry(60, 110, 751, 20)
@@ -458,9 +456,9 @@ class Direct_Control_Interface(QWidget):
     def move_axis_relative(self, axis, dist):
         self.ser.write(f'G91 {axis}{dist}\n'.encode())
 
-    #TODO This does not work, grbl gives ok response
+
     def move_absolute(self, x,y,z):
-        self.ser.write(f'G90 X{x} Y{y} Z{z}\n'.encode())
+        self.ser.write(f'G90 X{x.value()} Y{y.value()} Z{z.value()}\n'.encode())
 
     def help_button_info(self):
         msg = QMessageBox()
@@ -622,13 +620,15 @@ class Sorting_Worker(QObject):
     progress = pyqtSignal(int)
     update = pyqtSignal(int)
 
-    def __init__(self,serial_port,progress_bar):
+    def __init__(self,serial_port,progress_bar,commands):
         super().__init__()
         self.ser = serial_port
         self.progress_bar = progress_bar
+        self.commands = commands
 
     def sort_pills(self):
-        pass
+        for command in self.commands:
+            self.ser.write(command.encode())
 
 def main():
     user_info = [{"id": "1234",
