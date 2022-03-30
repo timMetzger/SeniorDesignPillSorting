@@ -2,7 +2,7 @@
 from PyQt5.QtWidgets import (QApplication, QLabel, QProgressBar, QPushButton, QTableView, QWidget,
                              QHBoxLayout, QGroupBox, QGridLayout, QTextEdit, QLineEdit, QVBoxLayout,
                              QHeaderView, QMenuBar, QActionGroup, QAction, QMessageBox, QSpinBox, QPlainTextEdit,
-                             QFrame,
+                             QFrame,QSizePolicy,
                              QDoubleSpinBox)
 
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QIcon
@@ -10,6 +10,7 @@ from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, QTimer ,QThread, py
 import serial
 import serial.tools.list_ports
 from functools import partial
+import configparser
 
 
 class Pill_Sorting_Interface():
@@ -25,9 +26,12 @@ class Pill_Sorting_Interface():
         self.current_selection_string = None
         self.gcode = None
 
+        self.config = "config.ini"
+
         self.menu_bar = QMenuBar()
         self.set_com_ports()
         if self.ser_grbl is not None and self.ser_uno is not None:
+
             self.create_table()
             self.create_top_right_window()
             self.create_bottom_right_window()
@@ -62,12 +66,12 @@ class Pill_Sorting_Interface():
     def create_table(self):
         self.left_window = QGroupBox("Open Prescriptions")
 
-        self.model = QStandardItemModel(len(self.scripts), len(self.scripts[0]) - 1)
+        self.model = QStandardItemModel(len(self.scripts), len(self.scripts[0]) - 3)
         self.model.setHorizontalHeaderLabels(["ID", "First Name", "Last Name", "Age", "Address"])
 
         for i, user in enumerate(self.scripts):
             for j, key in enumerate(user.keys()):
-                if key != "prescription":
+                if key != "prescription" and key != "frequency" and key != "days_of_week":
                     self.model.setItem(i, j, QStandardItem(user[key]))
 
         filter_model = QSortFilterProxyModel()
@@ -142,7 +146,7 @@ class Pill_Sorting_Interface():
 
     def start_sorter(self):
         if self.sorter is None:
-            self.sorter = Sorting_Pill_Dialog(self.ser_grbl,self.ser_uno,self.current_selection)
+            self.sorter = Sorting_Pill_Dialog(self.ser_grbl,self.ser_uno,self.current_selection['prescription'],self.gcode)
         self.sorter.show()
 
     # Set the serial communication attribute
@@ -154,6 +158,7 @@ class Pill_Sorting_Interface():
             elif port.description.startswith("USB-SERIAL CH340"):
                 self.ser_grbl = serial.Serial(port=port.device,baudrate=115200,timeout=1)
 
+    # Display messagebox that serial ports are not connected
     def serial_not_set(self):
         msg = QMessageBox()
         msg.setWindowTitle("Missing Serial Port")
@@ -163,10 +168,12 @@ class Pill_Sorting_Interface():
 
         msg.exec_()
 
+    # Scan rfid sticker
     def scan_rfid(self):
         self.ser_uno.write(b'scan')
         rfid_info = self.ser_uno.readline()
 
+    # Begin sorting process
     def start_sort(self):
         if self.current_selection is not None:
             self.ser_uno.write(b'start')
@@ -182,7 +189,7 @@ class Pill_Sorting_Interface():
             response = msg.exec_()
 
             if response == QMessageBox.Ok:
-                self.generate_commands()
+                self.generate_gcode()
                 starting_msg = SortingMessageBox(timeout=5)
                 starting_msg.exec_()
                 self.start_sorter()
@@ -198,7 +205,7 @@ class Pill_Sorting_Interface():
     def update_information(self, selected, deselected):
         try:
             item = selected.indexes()[0]
-            self.current_selection = self.scripts[item.row()]["prescription"]
+            self.current_selection = self.scripts[item.row()]
 
             script_info = self.scripts[item.row()]["prescription"]
             script_string = "Slot".ljust(15) + "Medication".ljust(20) + "\n"
@@ -212,6 +219,45 @@ class Pill_Sorting_Interface():
             self.top_right_window.setPlainText(script_string)
         except IndexError:
             print("IndexError")
+
+    # Generate the gcode commands for sorting
+    def generate_gcode(self):
+        config = configparser.ConfigParser()
+        config.read(self.config)
+
+        home = config['POSITIONS']['home']
+        safe = config['POSITIONS']['safe']
+        p1 = float(config['POSITIONS']['p1'])
+        p2 = float(config['POSITIONS']['p2'])
+
+        gap = p2 - p1
+
+        self.gcode = []
+
+        # Sort a single medication type at a time
+        for i, val in enumerate(self.current_selection['prescription'].values()):
+            current_slot = p1
+
+            # Get frequency and days of the week
+            freq = self.current_selection['frequency'][i]
+            days = [j for j, val in enumerate(self.current_selection['days_of_week'][i]) if val]
+
+            for day in days:
+                # Rotate sorted pill bin to appropriate day
+                self.gcode.append(f'G90 Y{day}\n') # TODO this will need tweaking
+
+                # Drop freq number of pills in the corresponding day
+                for _ in range(freq):
+                    self.gcode.append(f'G90 X{current_slot}\n')    # move to slot
+                    self.gcode.append(f'M03\n')                    # spindle on
+                    self.gcode.append('G90 Z-10\n')                # descend
+                    self.gcode.append('G90 Z0\n')                  # ascend
+                    self.gcode.append(f'G90 {home}\n')             # return to drop
+                    self.gcode.append(f'M05\n')                    # spindle off
+
+            current_slot += gap
+
+
 
 class Direct_Control_Interface(QWidget):
     def __init__(self, ser=None):
@@ -583,10 +629,10 @@ class Sorting_Pill_Dialog(QWidget):
         layout = QGridLayout()
 
         layout.addWidget(self.text,0,0)
-        layout.addWidget(self.resume_pause,1,0,1,2)
-        layout.addWidget(self.abort,1,2,1,2)
-        layout.addWidget(self.description_box,2,0,2,4)
-        layout.addWidget(self.progress_bar,4,0,1,4)
+        layout.addWidget(self.resume_pause,1,0,2,2)
+        layout.addWidget(self.abort,1,2,2,2)
+        layout.addWidget(self.description_box,3,0,2,4)
+        layout.addWidget(self.progress_bar,5,0,1,4)
 
 
         self.setWindowTitle("Sorting Pills")
@@ -599,6 +645,7 @@ class Sorting_Pill_Dialog(QWidget):
         self.resume_pause = QPushButton("Pause")
         self.resume_pause.clicked.connect(self.change_state)
 
+
         self.abort = QPushButton("Abort")
         self.abort.clicked.connect(self.abort_sort)
 
@@ -608,6 +655,7 @@ class Sorting_Pill_Dialog(QWidget):
         self.description_field = QPlainTextEdit()
         self.description_field.setReadOnly(True)
 
+
         layout = QVBoxLayout()
         layout.addWidget(self.description_field)
 
@@ -615,7 +663,7 @@ class Sorting_Pill_Dialog(QWidget):
 
 
         self.thread = QThread()
-        self.worker = Sorting_Worker(self.ser_grbl,self.pills,self.commands)
+        self.worker = Sorting_Worker(self.ser_grbl,self.pills,self.gcode)
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.sort_and_update)
         self.worker.progress.connect(self.update_description)
@@ -724,11 +772,12 @@ class Sorting_Worker(QObject):
     progress = pyqtSignal(object)
     finished = pyqtSignal()
 
-    def __init__(self,serial_port,pills,commands):
+    def __init__(self,serial_port,pills,gcode):
         super().__init__()
         self._sorting = True
         self.ser = serial_port
         self.pills = pills
+        self.gcode = gcode
 
         self.pill_counts = list(self.pills.values())
 
@@ -751,13 +800,17 @@ def main():
                   "last_name": "Smith",
                   "age": "72",
                   "address": "96 Whooovile RD KT",
-                  "prescription": {"Advil": 2, "Motrin": 3}
+                  "prescription": {"Advil": 2, "Motrin": 3},
+                  "frequency" : [1,1],
+                  "days_of_week": [[1,0,1,0,0,0,0],[1,0,1,0,1,0,0]]
                   }, {"id": "1281",
                       "first_name": 'Jan',
                       "last_name": "Doe",
                       "age": "65",
                       "address": "12 Seuss Valley MO",
-                      "prescription": {"Benadryl": 2, "Motrin": 6}
+                      "prescription": {"Benadryl": 2, "Motrin": 6},
+                      "frequency": [2,2],
+                      "days_of_week": [[1,0,0,0,0,0,0],[0,1,0,0,1,0,1]]
                       }]
     ui = Pill_Sorting_Interface(user_info)
 
