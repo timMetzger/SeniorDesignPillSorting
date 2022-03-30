@@ -20,7 +20,10 @@ class Pill_Sorting_Interface():
         self.ser_uno = None
         self.configurator = None
         self.controller = None
-        self.sorting = False
+        self.sorter = None
+        self.current_selection = None
+        self.current_selection_string = None
+        self.gcode = None
 
         self.menu_bar = QMenuBar()
         self.set_com_ports()
@@ -28,7 +31,7 @@ class Pill_Sorting_Interface():
             self.create_table()
             self.create_top_right_window()
             self.create_bottom_right_window()
-            self.create_progress_bar()
+            #self.create_progress_bar()
             self.create_menu_bar()
 
             self.window = QWidget()
@@ -38,7 +41,7 @@ class Pill_Sorting_Interface():
             main_layout.addWidget(self.left_window, 1, 0, 4, 3)
             main_layout.addWidget(self.top_right_window, 1, 3)
             main_layout.addWidget(self.bottom_right_window, 2, 3)
-            main_layout.addWidget(self.progress_bar, 3, 3)
+            #main_layout.addWidget(self.progress_bar, 3, 3)
             main_layout.setRowMinimumHeight(0, 25)
             main_layout.setColumnMinimumWidth(1, 750)
             main_layout.setColumnMinimumWidth(3, 250)
@@ -99,6 +102,7 @@ class Pill_Sorting_Interface():
         self.top_right_window = QTextEdit()
         self.top_right_window.setStyleSheet('font-size: 15px')
         self.top_right_window.setPlainText("Prescription Information")
+        self.top_right_window.setReadOnly(True)
 
     # Creates start,pause,abort button field
     def create_bottom_right_window(self):
@@ -110,25 +114,11 @@ class Pill_Sorting_Interface():
         self.start_button = QPushButton("Start")
         self.start_button.clicked.connect(self.start_sort)
 
-        self.pause_button = QPushButton("Pause")
-        self.pause_button.clicked.connect(self.pause_sort)
-
-        self.abort_button = QPushButton("Abort")
-        self.abort_button.clicked.connect(self.abort_sort)
-
         layout = QGridLayout()
         layout.addWidget(self.scan_rfid_button,0,0,1,3)
-        layout.addWidget(self.start_button,1,0)
-        layout.addWidget(self.pause_button,1,1)
-        layout.addWidget(self.abort_button,1,2)
+        layout.addWidget(self.start_button,1,0,1,3)
 
         self.bottom_right_window.setLayout(layout)
-
-    # Creates progress bar
-    def create_progress_bar(self):
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 10000)
-        self.progress_bar.setValue(0)
 
     # Creates menu bar
     def create_menu_bar(self):
@@ -138,15 +128,22 @@ class Pill_Sorting_Interface():
         tools.addAction("Configuration", self.start_configurator)
         tools.addAction("Direct Control", self.start_direct_control)
 
+    # Starts configuration tool
     def start_configurator(self):
         if self.configurator is None:
-            self.configurator = Configurator_Interface(self.ser_grbl)
+            self.configurator = Configuration_Interface(self.ser_grbl)
         self.configurator.show()
 
+    # Starts the direct control tool
     def start_direct_control(self):
         if self.controller is None:
             self.controller = Direct_Control_Interface(self.ser_grbl)
         self.controller.show()
+
+    def start_sorter(self):
+        if self.sorter is None:
+            self.sorter = Sorting_Pill_Dialog(self.ser_grbl,self.ser_uno,self.current_selection)
+        self.sorter.show()
 
     # Set the serial communication attribute
     def set_com_ports(self):
@@ -166,70 +163,55 @@ class Pill_Sorting_Interface():
 
         msg.exec_()
 
-    # TODO progress bar control and alert windows to user
     def scan_rfid(self):
         self.ser_uno.write(b'scan')
         rfid_info = self.ser_uno.readline()
 
     def start_sort(self):
-        self.ser_uno.write(b'start')
-        self.sorting = True
+        if self.current_selection is not None:
+            self.ser_uno.write(b'start')
 
-        starting_msg = TimedMessageBox(timeout=5)
-        starting_msg.exec_()
+            msg = QMessageBox()
+            msg.setWindowTitle("Load Medication")
+            msg.setText("Please load medication")
+            msg.setInformativeText(self.current_selection_string)
+            msg.setIcon(QMessageBox.Information)
 
+            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
 
-        self.thread = QThread()
-        self.worker = Sorting_Worker(self.ser_grbl,self.progress_bar)
-        self.worker.moveToThread(self.thread)
-        self.thead.started.connect(self.worker.sort_pills)
+            response = msg.exec_()
 
-        #TODO update the progress bar
-        # Need to use signals to control the thread running the sorting process
-        # thread with sorting process will display number of pill remaining
-        # emits a signal back to the main controller interface causing the
-        # the progress bar to update accordingly
-        self.worker.progress.connect(self.update)
-        self.thread.start()
+            if response == QMessageBox.Ok:
+                self.generate_commands()
+                starting_msg = SortingMessageBox(timeout=5)
+                starting_msg.exec_()
+                self.start_sorter()
+        else:
+            msg = QMessageBox()
+            msg.setWindowTitle("No Prescription Selected")
+            msg.setText("Please select a prescription from the table or use an RFID tag")
+            msg.setIcon(QMessageBox.Critical)
 
-
-
-    def pause_sort(self):
-        self.ser_uno.write(b'hold')
-
-        self.sorting = False
-
-        msg = QMessageBox()
-        msg.setWindowTitle("Sorting Paused")
-        msg.setText("Sorting has been paused")
-        msg.setIcon(QMessageBox.Information)
-        msg.exec_()
-
-
-    def abort_sort(self):
-        self.ser_uno.write(b'abort')
-
-        self.sorting = False
-
-        msg = QMessageBox()
-        msg.setWindowTitle("Sorting Aborted")
-        msg.setText("Sorting has been aborted")
-        msg.setIcon(QMessageBox.Information)
-        msg.exec_()
+            msg.exec_()
 
     # Updates the prescriptions information field
     def update_information(self, selected, deselected):
         try:
             item = selected.indexes()[0]
-            script_info = self.scripts[item.row()]["prescription"]
-            script_string = ""
-            for key, val in script_info.items():
-                script_string += f"{key}: {val}\n"
+            self.current_selection = self.scripts[item.row()]["prescription"]
 
+            script_info = self.scripts[item.row()]["prescription"]
+            script_string = "Slot".ljust(15) + "Medication".ljust(20) + "\n"
+            script_string += "-"*30+"\n"
+            i = 1
+            for key, val in script_info.items():
+                script_string += f"Slot {i}".ljust(15) + f"{key}: {val}".ljust(20)+"\n"
+                i += 1
+
+            self.current_selection_string = script_string
             self.top_right_window.setPlainText(script_string)
         except IndexError:
             print("IndexError")
-
 
 class Direct_Control_Interface(QWidget):
     def __init__(self, ser=None):
@@ -254,6 +236,7 @@ class Direct_Control_Interface(QWidget):
         self.setWindowTitle("Direct Control")
         self.setWindowIcon(QIcon("Gear-icon"))
         self.setLayout(layout)
+        self.setWindowModality(Qt.ApplicationModal)
 
     def create_top_button_group(self):
         self.left_group = QGroupBox("Controls")
@@ -374,7 +357,6 @@ class Direct_Control_Interface(QWidget):
 
         self.left_group.setLayout(layout)
 
-
     def create_serial_input(self):
         self.serial_input_box = QGroupBox("Serial Input")
 
@@ -456,7 +438,6 @@ class Direct_Control_Interface(QWidget):
     def move_axis_relative(self, axis, dist):
         self.ser.write(f'G91 {axis}{dist}\n'.encode())
 
-
     def move_absolute(self, x,y,z):
         self.ser.write(f'G90 X{x.value()} Y{y.value()} Z{z.value()}\n'.encode())
 
@@ -473,7 +454,7 @@ class Direct_Control_Interface(QWidget):
         self.ser.write(commands)
         self.serial_input_field.clear()
 
-class Configurator_Interface(QWidget):
+class Configuration_Interface(QWidget):
     def __init__(self, ser):
         super().__init__()
         self.ser = ser
@@ -485,6 +466,7 @@ class Configurator_Interface(QWidget):
         self.setWindowTitle("Configuration")
         self.setWindowIcon(QIcon("Gear-icon"))
         self.setLayout(layout)
+        self.setWindowModality(Qt.ApplicationModal)
 
     def create_fields(self):
         fields = ["Step Pulse", "Step Idle Delay", "Step Port Invert Mask", "Dir Port Invert Mask",
@@ -574,9 +556,131 @@ class Configurator_Interface(QWidget):
 
         return values
 
-class TimedMessageBox(QMessageBox):
+class Sorting_Pill_Dialog(QWidget):
+    def __init__(self,ser_grbl, ser_uno, pills, gcode):
+        super().__init__()
+        self.ser_grbl = ser_grbl
+        self.ser_uno = ser_uno
+        self.pills = pills
+        self.gcode = gcode
+
+        self.sorting = True
+
+        self.resume_pause = None
+        self.abort = None
+        self.progress_bar = None
+        self.description_box = None
+        self.description_field = None
+
+
+
+        self.text = QLabel(f"Sorting Pills")
+
+        self.create_buttons()
+        self.create_progress_bar()
+        self.create_description()
+
+        layout = QGridLayout()
+
+        layout.addWidget(self.text,0,0)
+        layout.addWidget(self.resume_pause,1,0,1,2)
+        layout.addWidget(self.abort,1,2,1,2)
+        layout.addWidget(self.description_box,2,0,2,4)
+        layout.addWidget(self.progress_bar,4,0,1,4)
+
+
+        self.setWindowTitle("Sorting Pills")
+        self.setWindowIcon(QIcon("Pills-icon"))
+        self.setLayout(layout)
+        self.setWindowModality(Qt.ApplicationModal)
+
+    # Create resume/pause and abort buttons
+    def create_buttons(self):
+        self.resume_pause = QPushButton("Pause")
+        self.resume_pause.clicked.connect(self.change_state)
+
+        self.abort = QPushButton("Abort")
+        self.abort.clicked.connect(self.abort_sort)
+
+    # Create remaining pills description
+    def create_description(self):
+        self.description_box = QGroupBox("Pills Remaining")
+        self.description_field = QPlainTextEdit()
+        self.description_field.setReadOnly(True)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.description_field)
+
+        self.description_box.setLayout(layout)
+
+
+        self.thread = QThread()
+        self.worker = Sorting_Worker(self.ser_grbl,self.pills,self.commands)
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.sort_and_update)
+        self.worker.progress.connect(self.update_description)
+        self.worker.finished.connect(self.final_dialog)
+        self.thread.start()
+
+    # Updates the description field
+    def update_description(self,nums):
+        i = 0
+        output_str = "Medication".ljust(15) + "Remaining".ljust(15) + "\n"
+        for key, val in self.pills.items():
+            self.pills[key] = nums[i]
+            output_str += f"{key}".ljust(15) + f"{val}".ljust(15)
+
+            i += 1
+
+        self.description_field.clear()
+        self.description_field.setPlaceholderText(output_str)
+
+    # Notify of successful sort
+    def final_dialog(self):
+        self.thread.terminate()
+
+        msg = QMessageBox()
+        msg.setWindowTitle("Sorting Complete")
+        msg.setIcon(QMessageBox.Information)
+
+        msg.exec_()
+
+        self.close()
+
+    # Creates progress bar
+    def create_progress_bar(self):
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 10000)
+        self.progress_bar.setValue(0)
+
+    # Change running state when button is pressed
+    def change_state(self):
+        if self.sorting:
+            self.setWindowTitle("Sorting Paused")
+            self.resume_pause.setText("Resume")
+            self.sorting = False
+            self.worker.set_sorting(False)
+
+        else:
+            self.setWindowTitle("Sorting Pills")
+            self.resume_pause.setText("Pause")
+            self.sorting = True
+            self.worker.set_sorting(True)
+
+    # Abort sorting process
+    def abort_sort(self):
+        self.sorting = False
+        self.close()
+
+    # Close window
+    def closeEvent(self, event):
+        event.accept()
+
+class SortingMessageBox(QMessageBox):
     def __init__(self, timeout=3, parent=None):
-        super(TimedMessageBox,self).__init__(parent)
+        super(SortingMessageBox, self).__init__(parent)
+
+
         self.setWindowTitle("Starting Sort")
         self.setIcon(QMessageBox.Information)
         self.setStandardButtons(QMessageBox.NoButton)
@@ -617,18 +721,29 @@ class Serial_Reader(QObject):
                     self.update.emit()
 
 class Sorting_Worker(QObject):
-    progress = pyqtSignal(int)
-    update = pyqtSignal(int)
+    progress = pyqtSignal(object)
+    finished = pyqtSignal()
 
-    def __init__(self,serial_port,progress_bar,commands):
+    def __init__(self,serial_port,pills,commands):
         super().__init__()
+        self._sorting = True
         self.ser = serial_port
-        self.progress_bar = progress_bar
-        self.commands = commands
+        self.pills = pills
 
-    def sort_pills(self):
-        for command in self.commands:
-            self.ser.write(command.encode())
+        self.pill_counts = list(self.pills.values())
+
+    def sort_and_update(self):
+        while True:
+            if sum(self.pills.values()) == 0:
+                break
+            while self._sorting:
+                pass
+
+
+
+    def set_sorting(self,state):
+        self._sorting = state
+
 
 def main():
     user_info = [{"id": "1234",
