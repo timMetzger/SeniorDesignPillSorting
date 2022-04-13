@@ -1,5 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 
+
 #define PIN 2
 #define LEDS 12
 
@@ -51,7 +52,6 @@ void loop() {
     else if(incomingString.equals("scan")){
         Serial.print("scanning");
       }
-
     }
   
 }

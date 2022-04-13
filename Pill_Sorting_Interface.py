@@ -5,7 +5,7 @@ import serial.tools.list_ports
 from PyQt5.QtCore import QSortFilterProxyModel, Qt
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QApplication, QMenuBar, QWidget, QGridLayout, QGroupBox, QLineEdit, QHBoxLayout, QLabel, \
-    QTableView, QHeaderView, QVBoxLayout, QTextEdit, QPushButton, QMessageBox
+    QTableView, QHeaderView, QVBoxLayout, QTextEdit, QPushButton, QMessageBox, QCheckBox
 
 from Sorting_Timed_Message import SortingMessageBox
 from Sorting_Pill_Dialog import Sorting_Pill_Dialog
@@ -144,10 +144,10 @@ class Pill_Sorting_Interface():
             self.controller = Direct_Control_Interface(self.ser_grbl)
         self.controller.show()
 
-    def start_sorter(self):
+    def start_sorter(self,steps = False):
         if self.sorter is None:
             self.sorter = Sorting_Pill_Dialog(self.ser_grbl, self.ser_uno, self.current_selection['prescription'],
-                                              self.gcode)
+                                              self.gcode,steps)
         self.sorter.show()
 
     # Set the serial communication attribute
@@ -155,7 +155,7 @@ class Pill_Sorting_Interface():
         ports = serial.tools.list_ports.comports()
         for i, port in enumerate(ports):
             print(port.description)
-            if port.description.startswith("tty"):
+            if port.description.startswith("Arduino"): # tty for linux
                 self.ser_uno = serial.Serial(port=port.device, baudrate=115200, timeout=1)
             elif port.description.startswith("USB"):
                 self.ser_grbl = serial.Serial(port=port.device, baudrate=115200, timeout=1)
@@ -181,21 +181,25 @@ class Pill_Sorting_Interface():
         if self.current_selection is not None:
             self.ser_uno.write(b'start')
 
+            check_box = QCheckBox("Step by Step?")
+
             msg = QMessageBox()
             msg.setWindowTitle("Load Medication")
             msg.setText("Please load medication")
             msg.setInformativeText(self.current_selection_string)
             msg.setIcon(QMessageBox.Information)
+            msg.setCheckBox(check_box)
 
             msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
 
             response = msg.exec_()
+            inSteps = check_box.isChecked()
 
             if response == QMessageBox.Ok:
                 self.generate_gcode()
                 starting_msg = SortingMessageBox(timeout=5)
                 starting_msg.exec_()
-                self.start_sorter()
+                self.start_sorter(inSteps)
         else:
             msg = QMessageBox()
             msg.setWindowTitle("No Prescription Selected")
