@@ -154,9 +154,10 @@ class Pill_Sorting_Interface():
     def set_com_ports(self):
         ports = serial.tools.list_ports.comports()
         for i, port in enumerate(ports):
-            if port.description.startswith("Arduino"):
+            print(port.description)
+            if port.description.startswith("tty"):
                 self.ser_uno = serial.Serial(port=port.device, baudrate=115200, timeout=1)
-            elif port.description.startswith("USB-SERIAL CH340"):
+            elif port.description.startswith("USB"):
                 self.ser_grbl = serial.Serial(port=port.device, baudrate=115200, timeout=1)
 
     # Display messagebox that serial ports are not connected
@@ -235,14 +236,17 @@ class Pill_Sorting_Interface():
         gap = p2_x - p1_x
 
         self.gcode = []
+        self.gcode.append('$X\n')
+
+
 
         # Sort a single medication type at a time
+        current_slot = p1_x
         for i, val in enumerate(self.current_selection['prescription'].values()):
-            current_slot = p1_x
 
             # Get frequency and days of the week
             freq = self.current_selection['frequency'][i]
-            days = [j for j, val in enumerate(self.current_selection['days_of_week'][i]) if val]
+            days = [j for j, v in enumerate(self.current_selection['days_of_week'][i]) if v]
 
             for day in days:
                 # Rotate sorted pill bin to appropriate day
@@ -252,7 +256,7 @@ class Pill_Sorting_Interface():
                 for _ in range(freq):
                     self.gcode.append(f'G90 X{current_slot}\n')  # move to slot
                     self.gcode.append(f'M03\n')  # spindle on
-                    self.gcode.append('G90 Z-10\n')  # descend
+                    self.gcode.append('G90 Z-5\n')  # descend
                     self.gcode.append('G90 Z0\n')  # ascend
                     self.gcode.append(f'G90 {home}\n')  # return to drop
                     self.gcode.append(f'M05\n')  # spindle off

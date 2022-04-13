@@ -39,10 +39,16 @@ class Sorting_Worker(QObject):
 
     def sort_and_update(self):
         while True:
-            if sum(self.pills.values()) == 0:
-                break
+            # if sum(self.pills.values()) == 0:
+            #     break
+            i = 0
+            self.ser.write(self.gcode[i])
             while self._sorting:
-                pass
+                if self.gcode[i].startswith("M05"): # decrement counter
+                    pass
+                else:
+                    self.ser.write(self.gcode[i].encode())
+            break
 
     def set_sorting(self, state):
         self._sorting = state

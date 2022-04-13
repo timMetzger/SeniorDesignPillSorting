@@ -254,14 +254,15 @@ class Direct_Control_Interface(QWidget):
         self.ser.write('?\n'.encode())
 
         position = self.ser.readline().decode('ascii')
+        print(position)
 
         self.worker.set_allowed(True)
 
         position = position.split(",")
 
-        x_coord = float(position[1].split(":")[1])
-        y_coord = float(position[2])
-        z_coord = float(position[3])
+        x_coord = float(position[0].split(":")[1])
+        y_coord = float(position[1])
+        z_coord = float(position[2].split("|")[0])
 
         gcode = f"X{x_coord} Y{y_coord} Z{z_coord}"
 
