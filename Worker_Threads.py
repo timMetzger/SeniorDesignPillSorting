@@ -49,9 +49,7 @@ class Sorting_Worker(QObject):
     def sort_and_update(self):
         self.i = 0
         while True:
-            while self._sorting:
-                if self.i == len(self.gcode) - 1:
-                    break
+            if self._sorting:
                 if self.gcode[self.i].startswith("M05"): # decrement counter
                     if self.inSteps:
                         self.stepper.emit()
