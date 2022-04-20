@@ -1,6 +1,6 @@
 # By: Timothy Metzger
 
-# Try G4p0 to check if board is idle or not
+
 
 from Pill_Sorting_Interface import Pill_Sorting_Interface
 

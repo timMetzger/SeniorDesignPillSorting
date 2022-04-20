@@ -46,21 +46,30 @@ class Sorting_Worker(QObject):
 
         self.pill_counts = list(self.pills.values())
 
+
     def sort_and_update(self):
         self.i = 0
         while True:
             if self._sorting:
-                if self.gcode[self.i].startswith("M05"): # decrement counter
+                if self.gcode[self.i].startswith("M05"):
+                    self.ser.write(self.gcode[self.i].encode())
+
                     if self.inSteps:
                         self.stepper.emit()
 
                         # Await messagebox to be clicked by main thread
                         while not self.app.thread_response:
-                            sleep(.1)
+                            sleep(0.1)
 
                         self.app.thread_response = False
 
                     else:
+                        response = self.ser.readline().decode('ascii')      # Try G4p0 to check if board is idle or not
+                        print(response)
+                        while response.strip() != "ok":
+                            print(response)
+                            response = self.ser.readline().decode('ascii')
+
                         self.i += 1
 
                 else:

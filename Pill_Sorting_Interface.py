@@ -241,6 +241,7 @@ class Pill_Sorting_Interface():
 
         self.gcode = []
         self.gcode.append('$X\n')
+        self.gcode.append(f'G90 {home}\n')
 
 
 
