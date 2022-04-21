@@ -237,7 +237,11 @@ class Pill_Sorting_Interface():
         p1_x = float(config['POSITIONS']['P1'].split(" ")[0][1:])
         p2_x = float(config['POSITIONS']['P2'].split(" ")[0][1:])
 
-        gap = p2_x - p1_x
+        p3_y = float(config['POSITIONS']['P3'].split(" ")[1][1:])
+        p4_y = float(config['POSITIONS']['P4'].split(" ")[1][1:])
+
+        x_gap = p2_x - p1_x
+        y_gap = p4_y - p3_y
 
         self.gcode = []
         self.gcode.append('$X\n')
@@ -255,7 +259,7 @@ class Pill_Sorting_Interface():
 
             for day in days:
                 # Rotate sorted pill bin to appropriate day
-                self.gcode.append(f'G90 Y{day}\n')  # TODO this will need tweaking
+                self.gcode.append(f'G90 Y{day*y_gap}\n')  # TODO this will need tweaking
 
                 # Drop freq number of pills in the corresponding day
                 for _ in range(freq):
@@ -266,4 +270,4 @@ class Pill_Sorting_Interface():
                     self.gcode.append(f'G90 {home}\n')  # return to drop
                     self.gcode.append(f'M05\n')  # spindle off
 
-            current_slot += gap
+            current_slot += x_gap
