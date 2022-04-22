@@ -289,3 +289,7 @@ class Direct_Control_Interface(QWidget):
         commands = self.serial_input_field.toPlainText().encode()
         self.ser.write(commands)
         self.serial_input_field.clear()
+
+    def closeEvent(self, event):
+        self.thread.terminate()
+        event.accept()

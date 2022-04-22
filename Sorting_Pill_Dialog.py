@@ -57,7 +57,7 @@ class Sorting_Pill_Dialog(QWidget):
     # Create sorting worker thread
     def start_thread(self):
         self.thread = QThread()
-        self.worker = Sorting_Worker(self.ser_grbl, self.pills, self.gcode, self.inSteps, self)
+        self.worker = Sorting_Worker(self.ser_grbl, self.ser_uno,self.pills, self.gcode, self.inSteps, self)
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.sort_and_update)
         self.worker.progress.connect(self.update_progress_bar)
@@ -119,18 +119,22 @@ class Sorting_Pill_Dialog(QWidget):
             self.resume_pause.setText("Resume")
             self.sorting = False
             self.worker.set_sorting(False)
+            self.ser_uno.write(b'hold')
 
         else:
             self.setWindowTitle("Sorting Pills")
             self.resume_pause.setText("Pause")
             self.sorting = True
             self.worker.set_sorting(True)
+            self.ser_uno.write(b'resume')
 
     # Abort sorting process
     def abort_sort(self):
         self.sorting = False
+        self.ser_uno.write(b'abort')
         self.close()
 
     # Close window
     def closeEvent(self, event):
+        self.progress_bar.setValue(0)
         event.accept()

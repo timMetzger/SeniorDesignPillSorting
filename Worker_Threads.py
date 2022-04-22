@@ -1,5 +1,6 @@
 from PyQt5.QtCore import pyqtSignal, QObject
-from time import sleep
+from time import sleep,time
+import re
 
 
 class Serial_Reader(QObject):
@@ -32,10 +33,11 @@ class Sorting_Worker(QObject):
     finished = pyqtSignal()
 
 
-    def __init__(self, serial_port, pills, gcode, inSteps, mainapp):
+    def __init__(self, serial_grbl, serial_uno ,pills, gcode, inSteps, mainapp):
         super().__init__()
         self._sorting = True
-        self.ser = serial_port
+        self.ser = serial_grbl
+        self.ser_uno = serial_uno
         self.pills = pills
         self.gcode = gcode
         self.inSteps = inSteps
@@ -49,40 +51,58 @@ class Sorting_Worker(QObject):
 
     def sort_and_update(self):
         self.i = 0
+        instructions_completed = 0
+        pattern = re.compile("^[^YZM]*$")
+
+        current_x = None
+        pos = 0
+        self.ser.write(self.gcode[self.i].encode())
+        self.i += 1
+
         while True:
             if self._sorting:
-                if self.gcode[self.i].startswith("M05"):
+                if self.i < len(self.gcode):
                     self.ser.write(self.gcode[self.i].encode())
+                    next_x = pattern.match(self.gcode[self.i])
 
-                    if self.inSteps:
-                        self.stepper.emit()
+                    if self.gcode[self.i].startswith("M9"):
+                        if self.inSteps:
+                            self.stepper.emit()
 
-                        # Await messagebox to be clicked by main thread
-                        while not self.app.thread_response:
-                            sleep(0.1)
+                            # Await messagebox to be clicked by main thread
+                            while not self.app.thread_response:
+                                sleep(0.1)
 
-                        self.app.thread_response = False
+                            self.app.thread_response = False
 
-                    else:
-                        response = self.ser.readline().decode('ascii')      # Try G4p0 to check if board is idle or not
-                        print(response)
-                        while response.strip() != "ok":
-                            print(response)
-                            response = self.ser.readline().decode('ascii')
+                    elif next_x is not None:
+                        if current_x is None:
+                            current_x = self.gcode[self.i]
+                            self.ser_uno.write(f"P{pos}".encode())
+                        else:
+                            if current_x != next_x:
+                                current_x = next_x
+                                pos += 1
+                                self.ser_uno.write(f"P{pos}".encode())
 
-                        self.i += 1
 
-                else:
-                    self.ser.write(self.gcode[self.i].encode())
+
+
                     self.i += 1
 
-                self.progress.emit(self.i)
-                sleep(0.25)
+                while self.ser.readline().decode('ascii').strip() != 'ok':
+                    pass
 
-            if self.i == len(self.gcode) - 1:
+                instructions_completed += 1
+                self.progress.emit(instructions_completed)
+
+
+            if instructions_completed == len(self.gcode) - 1:
                 break
 
+
         self.finished.emit()
+
 
     def set_sorting(self, state):
         self._sorting = state

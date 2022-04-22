@@ -60,13 +60,15 @@ class Configuration_Interface(QWidget):
 
     def update_settings(self):
         changes = []
-        for box in self.setting_boxs:
+        for i, box in enumerate(self.setting_boxs):
             field, command, starting_value, spin_box = box
 
             current_value = spin_box.value()
             if current_value != starting_value:
+                print(f'{command}={current_value}\n')
                 self.ser.write(f'{command}={current_value}\n'.encode())
-                changes.append(f"({field}):\t {starting_value} ------> {current_value}")
+                changes.append(f"({field}):\t {starting_value} ---> {current_value}")
+                self.setting_boxs[i][2] = current_value
 
         alert = QMessageBox()
         alert.setWindowTitle("Changes Applied")
@@ -104,3 +106,6 @@ class Configuration_Interface(QWidget):
                 continue
 
         return values
+
+    def closeEvent(self, event):
+        event.accept()

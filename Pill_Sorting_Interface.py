@@ -138,26 +138,30 @@ class Pill_Sorting_Interface():
             self.configurator = Configuration_Interface(self.ser_grbl)
         self.configurator.show()
 
+
+
     # Starts the direct control tool
     def start_direct_control(self):
-        if self.controller is None:
-            self.controller = Direct_Control_Interface(self.ser_grbl)
+        self.controller = Direct_Control_Interface(self.ser_grbl)
         self.controller.show()
 
+        self.controller = None
+
     def start_sorter(self,steps = False):
-        if self.sorter is None:
-            self.sorter = Sorting_Pill_Dialog(self.ser_grbl, self.ser_uno, self.current_selection['prescription'],
+        self.sorter = Sorting_Pill_Dialog(self.ser_grbl, self.ser_uno, self.current_selection['prescription'],
                                               self.gcode,steps)
         self.sorter.show()
+
+        self.sorter = None
 
     # Set the serial communication attribute
     def set_com_ports(self):
         ports = serial.tools.list_ports.comports()
         for i, port in enumerate(ports):
             print(port.description)
-            if port.description.startswith("ttyACM0"): # tty for linux
+            if port.description.startswith("Arduino"): # tty for linux
                 self.ser_uno = serial.Serial(port=port.device, baudrate=115200, timeout=1)
-            elif port.description.startswith("ttyACM2"):
+            elif port.description.startswith("USB"):
                 self.ser_grbl = serial.Serial(port=port.device, baudrate=115200, timeout=1)
                 self.ser_grbl.write('$X\n'.encode())
 

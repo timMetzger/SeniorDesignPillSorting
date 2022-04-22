@@ -1,8 +1,11 @@
 #include <Adafruit_NeoPixel.h>
 
 
-#define PIN 2
-#define LEDS 12
+#define PIN 3
+#define LEDS 23
+
+#define holdPin 12
+#define abortPin 13
 
 // LED Strip
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LEDS,PIN,NEO_GRB + NEO_KHZ800);
@@ -11,12 +14,17 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(LEDS,PIN,NEO_GRB + NEO_KHZ800);
 String incomingString;
 int lightPos;
 
+
+
+
 void setup() {
   Serial.begin(115200);
   
   strip.begin();
   strip.show();
 
+  pinMode(holdPin, OUTPUT);
+  pinMode(abortPin, OUTPUT);
 }
 
 void loop() {
@@ -28,24 +36,39 @@ void loop() {
         strip.clear();
         lightPos = incomingString.substring(1).toInt();
         strip.setPixelColor(lightPos,0,255,0);
+        strip.show();
       }
 
     // Handle lights for start sequence
     else if(incomingString.equals("start")){
         strip.clear();
         strip.fill(strip.Color(0,255,0),0,LEDS);
+        strip.show();
       }
 
     // Handle lights for paused sequence
     else if(incomingString.equals("hold")){
         strip.clear();
         strip.fill(strip.Color(255,255,0),0,LEDS);
+        strip.show();
+
+        digitalWrite(holdPin,HIGH);
+      }
+
+    else if(incomingString.equals("resume")){
+        strip.clear();
+        strip.fill(strip.Color(0,255,0),0,LEDS);
+        strip.show();
+        digitalWrite(holdPin,LOW);
       }
 
     // Handle lights for abort
     else if(incomingString.equals("abort")){
         strip.clear();
         strip.fill(strip.Color(255,0,0),0,LEDS);
+        strip.show();
+        
+        digitalWrite(abortPin,HIGH);
       }
 
     // Handle rfid scan

@@ -15,7 +15,7 @@ def main():
                   "frequency": [1, 1],
                   "days_of_week": [[1, 0, 1, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0, 0]]
                   }, {"id": "1281",
-                      "first_name": 'Jan',
+                      "first_name": 'Jane',
                       "last_name": "Doe",
                       "age": "65",
                       "address": "12 Seuss Valley MO",
