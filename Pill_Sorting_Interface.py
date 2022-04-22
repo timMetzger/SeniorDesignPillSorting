@@ -155,10 +155,11 @@ class Pill_Sorting_Interface():
         ports = serial.tools.list_ports.comports()
         for i, port in enumerate(ports):
             print(port.description)
-            if port.description.startswith("Arduino"): # tty for linux
+            if port.description.startswith("ttyACM0"): # tty for linux
                 self.ser_uno = serial.Serial(port=port.device, baudrate=115200, timeout=1)
-            elif port.description.startswith("USB"):
+            elif port.description.startswith("ttyACM2"):
                 self.ser_grbl = serial.Serial(port=port.device, baudrate=115200, timeout=1)
+                self.ser_grbl.write('$X\n'.encode())
 
     # Display messagebox that serial ports are not connected
     def serial_not_set(self):
@@ -245,7 +246,7 @@ class Pill_Sorting_Interface():
 
         self.gcode = []
         self.gcode.append('$X\n')
-        self.gcode.append(f'G90 {home}\n')
+        self.gcode.append(f'G90 {safe}\n')
 
 
 
@@ -264,10 +265,10 @@ class Pill_Sorting_Interface():
                 # Drop freq number of pills in the corresponding day
                 for _ in range(freq):
                     self.gcode.append(f'G90 X{current_slot}\n')  # move to slot
-                    self.gcode.append(f'M03\n')  # spindle on
+                    self.gcode.append(f'M8\n')  # spindle on
                     self.gcode.append('G90 Z-5\n')  # descend
                     self.gcode.append('G90 Z0\n')  # ascend
                     self.gcode.append(f'G90 {home}\n')  # return to drop
-                    self.gcode.append(f'M05\n')  # spindle off
+                    self.gcode.append(f'M9\n')  # spindle off
 
             current_slot += x_gap

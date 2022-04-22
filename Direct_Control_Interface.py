@@ -52,10 +52,10 @@ class Direct_Control_Interface(QWidget):
         minus_x1 = QPushButton("X -1")
         minus_x1.clicked.connect(partial(self.move_axis_relative, 'x', -1))
 
-        plus_x001 = QPushButton("X +0.001")
-        plus_x001.clicked.connect(partial(self.move_axis_relative, 'x', 0.001))
-        minus_x001 = QPushButton("X -0.001")
-        minus_x001.clicked.connect(partial(self.move_axis_relative, 'x', -0.001))
+        plus_x001 = QPushButton("X +0.01")
+        plus_x001.clicked.connect(partial(self.move_axis_relative, 'x', 0.01))
+        minus_x001 = QPushButton("X -0.01")
+        minus_x001.clicked.connect(partial(self.move_axis_relative, 'x', -0.01))
 
         # Y Control Buttons
         plus_y10 = QPushButton("Y +10")
@@ -68,10 +68,10 @@ class Direct_Control_Interface(QWidget):
         minus_y1 = QPushButton("Y -1")
         minus_y1.clicked.connect(partial(self.move_axis_relative, 'y', -1))
 
-        plus_y001 = QPushButton("Y +0.001")
-        plus_y001.clicked.connect(partial(self.move_axis_relative, 'y', 0.001))
-        minus_y001 = QPushButton("Y -0.001")
-        minus_y001.clicked.connect(partial(self.move_axis_relative, 'y', -0.001))
+        plus_y001 = QPushButton("Y +0.01")
+        plus_y001.clicked.connect(partial(self.move_axis_relative, 'y', 0.01))
+        minus_y001 = QPushButton("Y -0.01")
+        minus_y001.clicked.connect(partial(self.move_axis_relative, 'y', -0.01))
 
         # Z Control Buttons
         plus_z10 = QPushButton("Z +10")
@@ -84,10 +84,10 @@ class Direct_Control_Interface(QWidget):
         minus_z1 = QPushButton("Z -1")
         minus_z1.clicked.connect(partial(self.move_axis_relative, 'z', -1))
 
-        plus_z001 = QPushButton("Z +0.001")
-        plus_z001.clicked.connect(partial(self.move_axis_relative, 'z', 0.001))
-        minus_z001 = QPushButton("Z -0.001")
-        minus_z001.clicked.connect(partial(self.move_axis_relative, 'z', -0.001))
+        plus_z001 = QPushButton("Z +0.01")
+        plus_z001.clicked.connect(partial(self.move_axis_relative, 'z', 0.01))
+        minus_z001 = QPushButton("Z -0.01")
+        minus_z001.clicked.connect(partial(self.move_axis_relative, 'z', -0.01))
 
         # User input control
         x_spinner_label = QLabel("X")
@@ -260,9 +260,9 @@ class Direct_Control_Interface(QWidget):
 
         position = position.split(",")
 
-        x_coord = float(position[0].split(":")[1])
-        y_coord = float(position[1])
-        z_coord = float(position[2].split("|")[0])
+        x_coord = float(position[1].split(":")[1])
+        y_coord = float(position[2])
+        z_coord = float(position[3])
 
         gcode = f"X{x_coord} Y{y_coord} Z{z_coord}"
 
