@@ -27,17 +27,17 @@ def main():
                       "last_name": "Test1",
                       "age": "999",
                       "address": "Test1",
-                      "prescription": {"Aspirin": 2},
-                      "frequency": [1],
-                      "days_of_week": [[1, 0, 1, 0, 0, 0, 0]]
+                      "prescription": {"Aspirin": 14},
+                      "frequency": [2],
+                      "days_of_week": [[1, 1, 1, 1, 1, 1, 1]]
                       },{"id": "2",
                       "first_name": 'Test2',
                       "last_name": "Test2",
                       "age": "999",
                       "address": "Test2",
-                      "prescription": {"Benadryl": 2, "Motrin": 6},
+                      "prescription": {"Benadryl": 4, "Motrin": 6},
                       "frequency": [2, 2],
-                      "days_of_week": [[1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 1, 0, 1]]
+                      "days_of_week": [[1, 0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 1, 0, 1]]
                       },{"id": "3",
                       "first_name": 'Test3',
                       "last_name": "Test3",
