@@ -80,8 +80,8 @@ class Sorting_Worker(QObject):
                             current_x = self.gcode[self.i]
                             self.ser_uno.write(f"P{pos}".encode())
                         else:
-                            if current_x != next_x:
-                                current_x = next_x
+                            if current_x != self.gcode[self.i]:
+                                current_x = self.gcode[self.i]
                                 pos += 1
                                 self.ser_uno.write(f"P{pos}".encode())
 
@@ -97,10 +97,11 @@ class Sorting_Worker(QObject):
                 self.progress.emit(instructions_completed)
 
 
-            if instructions_completed == len(self.gcode) - 1:
+            if instructions_completed == len(self.gcode):
                 break
 
 
+        self.ser_uno.write("done".encode())
         self.finished.emit()
 
 

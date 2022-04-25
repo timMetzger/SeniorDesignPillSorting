@@ -134,10 +134,8 @@ class Pill_Sorting_Interface():
 
     # Starts configuration tool
     def start_configurator(self):
-        if self.configurator is None:
-            self.configurator = Configuration_Interface(self.ser_grbl)
+        self.configurator = Configuration_Interface(self.ser_grbl)
         self.configurator.show()
-
 
 
     # Starts the direct control tool
@@ -145,14 +143,12 @@ class Pill_Sorting_Interface():
         self.controller = Direct_Control_Interface(self.ser_grbl)
         self.controller.show()
 
-        self.controller = None
 
     def start_sorter(self,steps = False):
         self.sorter = Sorting_Pill_Dialog(self.ser_grbl, self.ser_uno, self.current_selection['prescription'],
                                               self.gcode,steps)
         self.sorter.show()
 
-        self.sorter = None
 
     # Set the serial communication attribute
     def set_com_ports(self):

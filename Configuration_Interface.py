@@ -16,6 +16,7 @@ class Configuration_Interface(QWidget):
         self.setWindowIcon(QIcon("Gear-icon"))
         self.setLayout(layout)
         self.setWindowModality(Qt.ApplicationModal)
+        self.setAttribute(Qt.WA_DeleteOnClose)
 
     def create_fields(self):
         fields = ["Step Pulse", "Step Idle Delay", "Step Port Invert Mask", "Dir Port Invert Mask",
@@ -102,8 +103,6 @@ class Configuration_Interface(QWidget):
                 command = response[0]
                 value = float(response[1].split(" ")[0])
                 values.append([command, value])
-            else:
-                continue
 
         return values
 

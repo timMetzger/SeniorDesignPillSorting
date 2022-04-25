@@ -43,6 +43,7 @@ class Sorting_Pill_Dialog(QWidget):
         self.setWindowIcon(QIcon("Pills-icon"))
         self.setLayout(layout)
         self.setWindowModality(Qt.ApplicationModal)
+        self.setAttribute(Qt.WA_DeleteOnClose)
 
         self.start_time = time()
 

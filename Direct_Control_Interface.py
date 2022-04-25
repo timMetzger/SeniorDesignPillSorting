@@ -36,6 +36,7 @@ class Direct_Control_Interface(QWidget):
         self.setWindowIcon(QIcon("Gear-icon"))
         self.setLayout(layout)
         self.setWindowModality(Qt.ApplicationModal)
+        self.setAttribute(Qt.WA_DeleteOnClose)
 
     def create_top_button_group(self):
         self.left_group = QGroupBox("Controls")
