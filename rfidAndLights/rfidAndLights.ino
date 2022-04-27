@@ -4,6 +4,7 @@
 #define PIN 3
 #define LEDS 23
 
+#define valvePin 11
 #define holdPin 12
 #define abortPin 13
 
@@ -26,6 +27,7 @@ void setup() {
 
   pinMode(holdPin, OUTPUT);
   pinMode(abortPin, OUTPUT);
+  pinMode(valvePin, OUTPUT);
 }
 
 void loop() {
@@ -84,6 +86,12 @@ void loop() {
           delay(250);
           blinkCount += 1;
         }
+      }
+    else if(incomingString.equals("open")){
+      digitalWrite(valvePin,HIGH);
+      }
+    else if(incomingString.equals("close")){
+      digitalWrite(valvePin,LOW);
       }
 
     // Handle rfid scan
