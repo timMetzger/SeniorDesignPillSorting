@@ -155,9 +155,9 @@ class Pill_Sorting_Interface():
         ports = serial.tools.list_ports.comports()
         for i, port in enumerate(ports):
             print(port.description)
-            if port.description.startswith("Arduino"): # tty for linux
+            if port.description.startswith("ttyACM0"): # tty for linux
                 self.ser_uno = serial.Serial(port=port.device, baudrate=115200, timeout=1)
-            elif port.description.startswith("USB"):
+            elif port.description.startswith("ttyACM2"):
                 self.ser_grbl = serial.Serial(port=port.device, baudrate=115200, timeout=1)
                 self.ser_grbl.write('$X\n'.encode())
 
@@ -235,8 +235,11 @@ class Pill_Sorting_Interface():
 
         home = config['POSITIONS']['Home']
         safe = config['POSITIONS']['Safe']
+
+        home_x = float(home.split(" ")[0][1:])
         p1_x = float(config['POSITIONS']['P1'].split(" ")[0][1:])
         p2_x = float(config['POSITIONS']['P2'].split(" ")[0][1:])
+
 
         p3_y = float(config['POSITIONS']['P3'].split(" ")[1][1:])
         p4_y = float(config['POSITIONS']['P4'].split(" ")[1][1:])
@@ -246,7 +249,6 @@ class Pill_Sorting_Interface():
 
         self.gcode = []
         self.gcode.append('$X\n')
-        self.gcode.append(f'G90 {safe}\n')
 
 
 
@@ -266,9 +268,13 @@ class Pill_Sorting_Interface():
                 for _ in range(freq):
                     self.gcode.append(f'G90 X{current_slot}\n')  # move to slot
                     self.gcode.append(f'M8\n')  # spindle on
-                    self.gcode.append('G90 Z-5\n')  # descend
-                    self.gcode.append('G90 Z0\n')  # ascend
-                    self.gcode.append(f'G90 {home}\n')  # return to drop
+                    self.gcode.append('G90 Z13.0\n')  # descend
+                    self.gcode.append('G90 Z6\n')  # ascend
+                    self.gcode.append(f'G90 X{home_x} Y{day*y_gap}\n')  # return to drop
                     self.gcode.append(f'M9\n')  # spindle off
+                    self.gcode.append('G90 Z6.05\n')
+                    self.gcode.append('G90 Z6\n')
 
+
+            print(current_slot)
             current_slot += x_gap

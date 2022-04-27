@@ -62,10 +62,12 @@ class Sorting_Worker(QObject):
         while True:
             if self._sorting:
                 if self.i < len(self.gcode):
+                    print(self.gcode[self.i])
                     self.ser.write(self.gcode[self.i].encode())
                     next_x = pattern.match(self.gcode[self.i])
 
                     if self.gcode[self.i].startswith("M9"):
+                        self.ser_uno.write('close'.encode())
                         if self.inSteps:
                             self.stepper.emit()
 
@@ -74,6 +76,9 @@ class Sorting_Worker(QObject):
                                 sleep(0.1)
 
                             self.app.thread_response = False
+
+                    elif self.gcode[self.i].startswith("M8"):
+                        self.ser_uno.write('open'.encode())
 
                     elif next_x is not None:
                         if current_x is None:
@@ -102,6 +107,7 @@ class Sorting_Worker(QObject):
 
 
         self.ser_uno.write("done".encode())
+        self.ser.write('G90 X0 Y0 Z0\n'.encode())
         self.finished.emit()
 
 

@@ -54,6 +54,14 @@ def main():
                       "prescription": {"Benadryl": 2, "Motrin": 6,"Aspirin": 2, "Advil": 6,"Tylenol": 2, "Claritin": 6},
                       "frequency": [2, 2, 2, 2, 2, 2],
                       "days_of_week": [[1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 1, 0, 1],[1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 1, 0, 1],[1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 1, 0, 1]]
+                      },{"id": "4",
+                      "first_name": 'OnePerSlot',
+                      "last_name": "OnePerSlot",
+                      "age": "999",
+                      "address": "OnePerSlot",
+                      "prescription": {"Benadryl": 1, "Motrin": 1,"Aspirin": 1, "Advil": 1,"Tylenol": 1, "Claritin": 1},
+                      "frequency": [1, 1, 1, 1, 1, 1],
+                      "days_of_week": [[1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0],[0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0],[0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 1, 0]]
                       }]
     Pill_Sorting_Interface(user_info)
 
