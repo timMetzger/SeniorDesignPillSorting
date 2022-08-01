@@ -1,6 +1,10 @@
 # Automated Pill Sorting
 ## What is this project 
-![Screenshot](https://github.com/timMetzger/SeniorDesignPillSorting/blob/master/Pictures/Completed_Assembly.png?raw=true)
+
+
+https://user-images.githubusercontent.com/37784441/182250058-951c6865-d840-4d49-b33f-1fa5c6e0104d.mp4
+
+
 
 This is a mechanical engineering project for a year-long senior design capstone course. The goal of this project is to take a patients prescribed medications and sort them by days of the week or times of day. To accomplish this there is a major software component utilizing C, Python, and QT widget library. Python and QT are used to create the GUI for the end user allowing control and tuning of the machine as well as generating GCode statements for an Ardunio Uno to interpret. 
 ## How does it work
