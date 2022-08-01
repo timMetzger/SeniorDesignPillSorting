@@ -1,4 +1,5 @@
 # Automated Pill Sorting
+Automated pill sorting device project
 ## What is this project 
 
 
