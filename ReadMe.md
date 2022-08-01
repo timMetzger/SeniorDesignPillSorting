@@ -1,6 +1,6 @@
 # Automated Pill Sorting
 ## What is this project 
-[logo]: https://github.com/timMetzger/SeniorDesignPillSorting/tree/master/Pictures/Completed_Assembly.png "Final Assembly"
+![alt text](https://github.com/timMetzger/SeniorDesignPillSorting/tree/master/Pictures/Completed_Assembly.png)
 This is a mechanical engineering project for a year-long senior design capstone course. The goal of this project is to take a patients prescribed medications and sort them by days of the week or times of day. To accomplish this there is a major software component utilizing C, Python, and QT widget library. Python and QT are used to create the GUI for the end user allowing control and tuning of the machine as well as generating GCode statements for an Ardunio Uno to interpret. 
 ## How does it work
 The machine itself is inspired by a SCARRA robotic arm. A central sorting using two 12V stepper motors controls the location of an SMT pick and place head. When the machine has positioned itself over a pill slot a solenoid valve is activated creating suction at the tip of the SMT head allowing for the retrieval of a pill. This is the basics of how pills are retrieved from storage locations. Now, it is a bit more complicated than that as the machine needs code to understand what to do. This is where the Arduino Uno flashed with the GRBL gcode interpeter comes in. This means that the python program needs to generate the GCode statements for the Arduino to read and control the multiple servo motors.  
